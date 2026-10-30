@@ -1,48 +1,67 @@
-# 信息化资产管理系统：ARM64 Docker 离线部署包 V1.1
+# 信息化资产管理系统：ARM64 Docker 离线部署包 V1.2
 
-目标环境：统信 UOS ARM64、Docker 18.09.1（build 4c52b90）。镜像内含 Python、全部依赖、系统 Ping 与本地页面资源；宿主机无需 Python，无需联网安装或拉取镜像。
+V1.2 新增 **Excel 批量导入、模板下载、上传预览、逐行校验和导入日志**。目标为统信 UOS ARM64；沿用已正常运行的 Docker 环境，宿主机无需 Python 和网络。
 
-- [下载完整部署包（约49MB）](https://github.com/friendfan1/-/raw/refs/heads/main/delivery/asset-console-docker-1.1-arm64-offline.tar.gz)
-- [下载 SHA256 校验文件](https://github.com/friendfan1/-/raw/refs/heads/main/delivery/asset-console-docker-1.1-arm64-offline.tar.gz.sha256)
+- [下载最新完整部署包 V1.2（约 49 MB）](https://github.com/friendfan1/-/raw/refs/heads/main/delivery/asset-console-docker-1.2-arm64-offline.tar.gz)
+- [下载 SHA256 校验文件](https://github.com/friendfan1/-/raw/refs/heads/main/delivery/asset-console-docker-1.2-arm64-offline.tar.gz.sha256)
+- [直接下载 Excel 导入模板](https://github.com/friendfan1/-/raw/refs/heads/main/delivery/asset-import-template.xlsx)
+- [已部署 V1.1：离线升级步骤](V1.2离线升级步骤.md)
+- [Excel 批量导入使用说明](Excel批量导入使用说明.md)
+- [V1.2 验证报告](V1.2验证报告.md)
 
-仓库为私有时，请先在浏览器登录有权访问的 GitHub 账号。若浏览器显示文件页，点击 Download raw file。
+仓库为私有时，请先在浏览器登录有权访问的 GitHub 账号。若显示文件页，点击 Download raw file。
 
-文件大小：51,029,145 字节。SHA256：
+## 已部署用户升级
+
+请先阅读上面的「V1.2 离线升级步骤」。先备份，再复制原 `deploy/docker.env` 到新目录，导入新镜像并用新包里的脚本重建两个容器。继续使用 **原数据卷 `asset-console-data`**，保留资产、账号、日志和密钥；使用原账号登录。包内也提供完整的升级说明和 Excel 模板。
+
+新版本镜像标签为 `asset-console:1.2-arm64`。不要直接拿外层交付包执行 `docker load`；先解压，再导入里面的 `asset-console-1.2-arm64.image.tar.gz`。
+
+## 新功能怎么用
+
+维护员登录后，点击「资产台账 → 批量导入 → 下载 Excel 模板」。在「资产导入」表填写设备，上传预览，通过检查后确认入库。
+
+- 同一表可填写工作网终端、互联网终端、打印机。
+- 资产类别、部门、使用人、安装位置必填；其他信息可以后续补充。
+- 仅支持 `.xlsx`，每批最多 200 条，文件不超过 5 MB。
+- 模板数据区为空，电话、房间号、序列号等设置为文本。参考示例位于说明页，不会自动导入。
+- 本功能新增资产；已有资产通过台账编辑。重复序列号、MAC、同类网络 IP 或整行资料会阻止整批导入，并显示 Excel 行号。
+- 一次确认全部保存或全部撤销；逐台记录新增字段、来源 IP、账号、文件、行号和批次。导出继续显示每台资产最后更新时间。
+- 查看、导出和模板下载免登录；导入和维护需要登录。
+
+## 完整包校验
+
+文件大小：51,058,574 字节。SHA256：
 
 ```text
-05d12c6aa5b0c1f9477af9691eec553918b823525e537f1a17e318af7c7ca485
+f7a5163344adafd366c25f3759d93e0381a7e5e66a5a314a395a0f89ad66eff3
 ```
 
-## 部署
+```sh
+sha256sum -c asset-console-docker-1.2-arm64-offline.tar.gz.sha256
+```
 
-把部署包和校验文件复制到 UOS 服务器的同一目录，执行：
+## 首次部署
 
 ```sh
-sha256sum -c asset-console-docker-1.1-arm64-offline.tar.gz.sha256
-tar -xzf asset-console-docker-1.1-arm64-offline.tar.gz
-cd asset-console-docker-1.1-arm64-offline
-docker load -i asset-console-1.1-arm64.image.tar.gz
+tar -xzf asset-console-docker-1.2-arm64-offline.tar.gz
+cd asset-console-docker-1.2-arm64-offline
+docker load -i asset-console-1.2-arm64.image.tar.gz
 cp deploy/docker.env.example deploy/docker.env
 chmod 600 deploy/docker.env
 ```
 
-在 UOS 上编辑 `deploy/docker.env`，把 `APP_ALLOWED_HOSTS` 中的 `10.10.1.10` 改成服务器的实际内网 IP，保留 `127.0.0.1,localhost`。然后执行：
+将 `deploy/docker.env` 中的示例 IP 改为实际服务器内网 IP，再执行：
 
 ```sh
 sh deploy/docker-up.sh
 docker exec -it asset-console-web python manage.py init_admin
 ```
 
-按提示创建维护管理员，然后在客户端浏览器访问服务器内网 IP 的 8000 端口。查看与导出无需登录，维护需要登录。没有默认管理员密码，也没有单位资产数据。
+首次部署没有默认管理员或单位资产。完整部署、备份恢复及运行状态说明见包内 `docs/Docker离线部署指南.md`。
 
-完整部署、备份恢复和升级说明在包内 `docs/Docker离线部署指南.md`；启停脚本保留持久数据卷。
+## 验证与历史故障排查
 
-## 验证范围
+已通过 69 项应用测试（含 ARM64 模拟容器）、真实 Chrome 83 的 36 项浏览器检查、13 项实际下载文件内容检查及 11 项容器升级断言。云端 daemon 为 Docker 28.4.0，实际 UOS 上的 V1.2 升级和工作网 Ping 仍须现场核对，详见验证报告。
 
-已通过 ARM64 模拟应用测试、真实 Chrome 83、容器停止、备份恢复与镜像回读校验。使用 Docker 18.09.1 客户端已导入云端 Docker 28 服务端；真实 UOS 的 Docker 18.09.1 服务端及单位工作网 Ping 仍需现场验收。详见包内验证报告。
-
-## Docker 创建容器报 net_prio 错误
-
-参见 [net_prio 故障排查](故障排查-net_prio.md)。本目录提供启动失败清理补丁 `docker-up.sh`，它不改变镜像或数据卷，不代替宿主 cgroup 配置修复。
-
-UOS 20 的 `net_prio` 控制器报错可使用[小型条件修复包](https://github.com/friendfan1/-/raw/refs/heads/main/delivery/net-prio-fix-kit.zip)，先执行 `--check`。具体条件与临时修复边界见故障排查文档。
+若仍使用旧 Docker 18 并遇到 net_prio 错误，历史资料见 [net_prio 故障排查](故障排查-net_prio.md)。此前单独的 `docker-up.sh` 和修复小包属于 V1.1 历史补丁；V1.2 升级使用完整新包中的脚本。
