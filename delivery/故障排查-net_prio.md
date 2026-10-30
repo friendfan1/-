@@ -34,3 +34,27 @@ ls -ld /sys/fs/cgroup/net_prio /sys/fs/cgroup/net_cls*
 - https://github.com/containerd/containerd/blob/v1.2.2/vendor/github.com/containerd/cgroups/v1.go
 
 修订脚本已通过14项启停及入口模拟测试，包含容器创建失败、monitor失败及并发创建时不误删其他实例；这不是目标 UOS 主机修复验证。
+
+## UOS 20 截图后的条件修复
+
+观察到系统使用多个 cgroup v1 控制器，并有 unified 子挂载；`/proc/cgroups` 和挂载列表均没有 `net_prio`，cgroup 根目录为只读 tmpfs。旧版 containerd 会把已存在的控制器目录当作有效控制器，即使内核没有提供该控制器。还需通过脚本确认具体目录类型及内容，不能仅凭截图认定目录为空。
+
+[下载小型修复包](https://github.com/friendfan1/-/raw/refs/heads/main/delivery/net-prio-fix-kit.zip)，解压后将两个 `.sh` 文件放入原部署包的 `deploy` 目录，保留原配置。脚本也可单独下载 [fix-net-prio.sh](https://github.com/friendfan1/-/raw/refs/heads/main/delivery/fix-net-prio.sh)。
+
+先仅检查：
+
+```sh
+sudo sh fix-net-prio.sh --check
+```
+
+只有输出“检查符合”时再应用，然后清理失败的本系统容器并重试：
+
+```sh
+sudo sh fix-net-prio.sh --apply
+sudo sh docker-down.sh
+sudo sh docker-up.sh
+```
+
+`--apply` 只移除经过检查的未挂载空目录。原根目录若只读，会暂时改为可写并在退出时恢复全部原选项。非空目录、符号链接、挂载点、已注册或使用中的控制器、读取失败、不符合的 cgroup 布局都会拒绝清理。脚本未操作真实 UOS，保护与恢复流程已通过17项临时文件系统／模拟挂载测试。
+
+这是当前开机的兼容清理。若重启后复发，应继续核对 UOS 创建该目录的服务，不能宣称已完成持久修复。若清理后仍然报错，请提供脚本输出和新的完整错误；不需要重新导入业务镜像。

