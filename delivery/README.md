@@ -40,3 +40,7 @@ docker exec -it asset-console-web python manage.py init_admin
 ## 验证范围
 
 已通过 ARM64 模拟应用测试、真实 Chrome 83、容器停止、备份恢复与镜像回读校验。使用 Docker 18.09.1 客户端已导入云端 Docker 28 服务端；真实 UOS 的 Docker 18.09.1 服务端及单位工作网 Ping 仍需现场验收。详见包内验证报告。
+
+## Docker 创建容器报 net_prio 错误
+
+参见 [net_prio 故障排查](故障排查-net_prio.md)。本目录提供启动失败清理补丁 `docker-up.sh`，它不改变镜像或数据卷，不代替宿主 cgroup 配置修复。
